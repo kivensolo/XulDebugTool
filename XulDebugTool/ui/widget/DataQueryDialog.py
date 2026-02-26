@@ -90,8 +90,8 @@ class DataQueryDialog(BaseDialog):
                     row += 1
 
         self.tableView = QtWidgets.QTableWidget(row,2,self)
-        self.tableView.move(36, 3*Utils.getItemHeight())
-        self.tableView.resize(300, Utils.getItemHeight() * (row+1))
+        self.tableView.move(36, int(3*Utils.getItemHeight()))
+        self.tableView.resize(300, int(Utils.getItemHeight() * (row+1)))
         self.tableView.setColumnWidth(0, 150)
         self.tableView.setColumnWidth(1, 150)
         self.tableView.horizontalHeader().setFixedHeight(Utils.getItemHeight())
@@ -149,9 +149,9 @@ class DataQueryDialog(BaseDialog):
                 self.tableView.setItem(row, 1, QtWidgets.QTableWidgetItem())
                 # 加上表头,不超过7行,超过滚动条显示
                 if (self.currentRowCount + 2) <= 7:
-                    self.tableView.resize(300, Utils.getItemHeight() * (self.currentRowCount + 2))
+                    self.tableView.resize(300, int(Utils.getItemHeight() * (self.currentRowCount + 2)))
                 else:
-                    self.tableView.resize(322, Utils.getItemHeight() * 7)
+                    self.tableView.resize(322, int(Utils.getItemHeight() * 7))
         url = self.url + self.__getQueryParam()
         self.requestLineEdit.setText(url)
 

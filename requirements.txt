@@ -1,0 +1,22 @@
+# XulDebugTool 核心依赖 (基于Python 3.11)
+
+# PyQt5 相关
+PyQt5==5.15.11
+PyQt5-Qt5==5.15.2
+PyQt5_sip==12.18.0
+PyQtWebEngine==5.15.7
+PyQtWebEngine-Qt5==5.15.2
+
+# XML 处理
+lxml==6.0.2
+xmltodict==1.0.4
+
+# HTTP 请求
+urllib3==2.6.3
+
+# 剪贴板操作
+pyperclip==1.11.0
+
+# Windows 系统相关(或者用311版本)
+pywin32==306
+

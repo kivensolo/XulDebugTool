@@ -55,8 +55,8 @@ class UpdateProperty(QTreeWidget):
         self.viewTag = ''
         self.pageId = ''
         self.inputWidget = QTreeWidget(self)
-        self.inputWidget.setFixedHeight(Utils.getWindowHeight() * 0.83)
-        self.inputWidget.setFixedWidth(Utils.getWindowWidth() / 3)
+        self.inputWidget.setFixedHeight(int(Utils.getWindowHeight() * 0.83))
+        self.inputWidget.setFixedWidth(int(Utils.getWindowWidth() / 3))
         self.inputWidget.setStyleSheet("QTreeWidget::item{height:" + str(Utils.getItemHeight()) + "px}")
 
         self.inputWidget.setHeaderLabels(['Key', 'Value'])
@@ -82,7 +82,7 @@ class UpdateProperty(QTreeWidget):
         self.slm.setStringList(ITEM_EVENT)
         self.listView.setModel(self.slm)
         self.listView.move(30, 150)
-        self.listView.resize(300, len(ITEM_EVENT) * Utils.getItemHeight())
+        self.listView.resize(300, int(len(ITEM_EVENT) * Utils.getItemHeight()))
         self.listView.clicked.connect(self.itemClickedEvent)
         STCLogger().i('init UpdateProperty')
 
@@ -92,9 +92,9 @@ class UpdateProperty(QTreeWidget):
     def changeExpand(self):
         classHeight = int(3.25 * Utils.getItemHeight())
         if self.inputAttr.isExpanded() and self.inputAttr.child(0):
-            classHeight = classHeight + (ITEM_ATTR.__len__() + 1) * Utils.getItemHeight()
+            classHeight = classHeight + int((ITEM_ATTR.__len__() + 1) * Utils.getItemHeight())
         if self.inputStyle.isExpanded() and self.inputAttr.child(0):
-            classHeight = classHeight + (ITEM_STYLE.__len__() + 1) * Utils.getItemHeight()
+            classHeight = classHeight + int((ITEM_STYLE.__len__() + 1) * Utils.getItemHeight())
         self.ClassBox_1.move(30, classHeight)
         self.ClassBox_2.move(150, classHeight)
         self.listView.move(30, classHeight + Utils.getItemHeight())
