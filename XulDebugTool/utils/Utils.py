@@ -94,6 +94,20 @@ class Utils(object):
         return zoomFactor
 
     @staticmethod
+    def calculateDpiScale():
+        """
+        根据屏幕分辨率计算UI缩放因子
+        以1920x1080为基准分辨率
+        用于UI元素的位置、大小缩放
+        """
+        baseWidth = 1920
+        # 计算缩放比例
+        scale = Utils.windowWidth / baseWidth
+        # 限制缩放范围在0.8到2.0之间
+        scale = max(0.8, min(scale, 2.0))
+        return scale
+
+    @staticmethod
     def setAutoLoginState(loginState):
         try:
             conn = sqlite3.connect('XulDebugTool.db')
