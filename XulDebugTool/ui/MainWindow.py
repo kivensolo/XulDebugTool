@@ -259,7 +259,7 @@ class MainWindow(BaseWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.initQCheckBoxUI())
         layout.addWidget(self.initSearchView())
-        layout.addWidget(self.browser)
+        layout.addWidget(self.browser, 1)          # 浏览器区域，stretch=1 占据剩余空间
         self.tabContentWidget.setLayout(layout)
         self.searchWidget.hide()
 
@@ -340,6 +340,10 @@ class MainWindow(BaseWindow):
 
     def initQCheckBoxUI(self):
         self.groupBox = QGroupBox()
+        # 设置固定高度
+        self.groupBox.setFixedHeight(int(Utils.getAdaptItemHeight()))
+        self.groupBox.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+
         self.skipPropCheckBox = QCheckBox(SKIP_PROP, self)
         self.skipPropCheckBox.setChecked(False)
         self.skipPropCheckBox.stateChanged.connect(lambda: self.clickCheckBox(self.skipPropCheckBox, SKIP_PROP))
