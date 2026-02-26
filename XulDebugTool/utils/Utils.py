@@ -16,6 +16,7 @@ class Utils(object):
     windowWidth = 1920
     windowHeight = 1080
     itemHeight = 30
+    zoomFactor = 1.35
 
     @staticmethod
     def xml2json(xml, tag):
@@ -67,6 +68,30 @@ class Utils(object):
     @staticmethod
     def getItemHeight():
         return Utils.itemHeight
+
+    @staticmethod
+    def getAdaptItemHeight():
+        return Utils.itemHeight * Utils.zoomFactor
+
+    @staticmethod
+    def calculateZoomFactor():
+        """
+        根据屏幕分辨率计算合适的缩放因子
+        以1920x1080为基准分辨率，缩放因子为1.3
+        根据屏幕宽度动态调整缩放比例
+        """
+        baseWidth = 1920
+        # width=1920
+        baseZoomFactor = 1.35
+        # 最小缩放因子，避免在低分辨率屏幕( width <= 1366)上字体过大
+        minZoomFactor = 0.8
+        # 最大缩放因子，避免在超高分辨率屏幕(width >= 3840 4K)上字体过大
+        maxZoomFactor = 2.0
+        # 根据屏幕宽度计算缩放因子
+        zoomFactor = baseZoomFactor * (Utils.windowWidth / baseWidth)
+        # 限制缩放因子在合理范围内
+        zoomFactor = max(minZoomFactor, min(zoomFactor, maxZoomFactor))
+        return zoomFactor
 
     @staticmethod
     def setAutoLoginState(loginState):

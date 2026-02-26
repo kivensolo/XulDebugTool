@@ -229,7 +229,7 @@ class MainWindow(BaseWindow):
 
         self.tabContentWidget = QWidget()
         self.browser = QWebEngineView()
-        self.browser.setZoomFactor(1.3)
+        self.browser.setZoomFactor(Utils.calculateZoomFactor())
         self.channel = QWebChannel()
         self.webObject = WebShareObject()
         self.channel.registerObject('bridge', self.webObject)

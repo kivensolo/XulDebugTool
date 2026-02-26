@@ -22,6 +22,9 @@ class App(object):
         super().__init__()
 
 if __name__ == '__main__':
+    # 设置高 DPI 缩放
+    QApplication.setAttribute(1, True)  # AA_EnableHighDpiScaling
+    # QApplication.setAttribute(0, True)  # AA_UseHighDpiPixmaps
     app = QApplication(sys.argv)
     try:
         ex = ConnectWindow()
