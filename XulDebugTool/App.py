@@ -23,5 +23,11 @@ class App(object):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    ex = ConnectWindow()
-    sys.exit(app.exec_())
+    try:
+        ex = ConnectWindow()
+        sys.exit(app.exec_())
+    except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)

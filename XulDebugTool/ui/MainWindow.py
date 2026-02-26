@@ -63,10 +63,19 @@ WITH_SELECTOR = 'with-selector'
 class MainWindow(BaseWindow):
     def __init__(self):
         super().__init__()
+        print('__init__ main window.')
         self.qObject = QObject()
-        self.initConsole()
-        self.initUI()
-        self.show()
+        try:
+            print('Step 1: Init console')
+            self.initConsole()
+            print('Step 2: Init UI')
+            self.initUI()
+            print('MainWindow initialized successfully, show window.')
+            self.show()
+        except Exception as e:
+            print(f'Error during initialization: {e}')
+            import traceback
+            traceback.print_exc()
 
     def initConsole(self):
         self.consoleWindow = ButtomWindow()
@@ -160,6 +169,7 @@ class MainWindow(BaseWindow):
 
     def initLayout(self):
         # ----------------------------left layout---------------------------- #
+        print('Init main window layout.')
         self.treeModel = QStandardItemModel()
         self.pageItem = QStandardItem(ROOT_ITEM_PAGE)
         self.pageItem.type = ITEM_TYPE_PAGE_ROOT
