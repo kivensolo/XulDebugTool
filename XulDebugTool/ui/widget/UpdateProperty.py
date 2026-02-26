@@ -2,6 +2,55 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2017/11/13 17:10
 # @Author  : Mrlsm -- starcor
+"""
+ @Update : 2026/2/26
+ @Author: ZekeWong
+ 目前布局结构如下：
+ UpdateProperty(QWidget)
+  │
+  └── QVBoxLayout (mainLayout)
+      └── QSplitter (splitter) - Qt.Vertical 垂直方向，初始比例 60:40
+          │
+          ├── [0] QTreeWidget (inputWidget) - 上部分 60%
+          │   ├── QTreeWidgetItem (inputAttr) - Attr 根节点
+          │   │   └── 动态子项（属性键值对）
+          │   └── QTreeWidgetItem (inputStyle) - Style 根节点
+          │       └── 动态子项（样式键值对）
+          │
+          └── [1] QWidget (classBoxContainer) - 下部分 40%
+              └── QVBoxLayout (buttomExtBoxLayout) - 顶部对齐
+                  ├── QWidget (comboBoxContainer) - 固定高度，紧贴顶部
+                  │   └── QHBoxLayout (comboBoxRow)
+                  │       ├── QComboBox (classActionBox) - stretch=1 (25%)
+                  │       └── QComboBox (classValuesBox) - stretch=3 (75%)
+                  ├── QListView (listView) - 高度自适应内容
+                  └── addStretch() - 占用剩余空间
+
+   视觉效果
+   ┌─────────────────────────────────────────┐
+   │  ┌───────────────────────────────────┐  │
+   │  │  ▲ QTreeWidget 自带滚动条           │  │ ← 可拖动分隔线
+   │  │  ├─ Attr                          │  │   调整上下比例
+   │  │  │   ├─ x           100           │  │
+   │  │  │   ├─ y           200           │  │
+   │  │  │   └─ ...         ...           │  │
+   │  │  └─ Style                         │  │
+   │  │      ├─ font-size   16            │  │
+   │  │      └─ ...         ...           │  │
+   │  └───────────────────────────────────┘  │
+   │  ══════════════════════════════════════ │ ← 可拖动分隔线
+   │  ┌───────────────────────────────────┐  │
+   │  │ [add-class▼] [class selector▼]    │  │ ← 固定在顶部
+   │  │ ┌─────────────────────────────┐   │  │
+   │  │ │ event1                      │   │  │
+   │  │ │ event2                      │   │  │ ← 高度自适应
+   │  │ │ event3                      │   │  │
+   │  │ └─────────────────────────────┘   │  │
+   │  └───────────────────────────────────┘  │
+   └─────────────────────────────────────────┘
+            ↑                          ↑
+     初始 60% (可拖动调整)       初始 40% (可拖动调整)
+ """
 
 import json
 
@@ -46,7 +95,7 @@ property_color_two = QColor(255, 255, 255)
 add_color = QColor(255, 255, 255)
 
 
-class UpdateProperty(QTreeWidget):
+class UpdateProperty(QWidget):
     def __init__(self, parent=None):
         super(UpdateProperty, self).__init__(parent)
         self.data = None
@@ -54,9 +103,21 @@ class UpdateProperty(QTreeWidget):
         self.sameFlag = True
         self.viewTag = ''
         self.pageId = ''
-        self.inputWidget = QTreeWidget(self)
-        self.inputWidget.setFixedHeight(int(Utils.getWindowHeight() * 0.83))
-        self.inputWidget.setFixedWidth(int(Utils.getWindowWidth() / 3))
+
+        # 主布局
+        self.mainLayout = QVBoxLayout(self)
+        self.mainLayout.setContentsMargins(0, 0, 0, 0)
+        self.mainLayout.setSpacing(0)
+
+        # 创建垂直分隔器 (QSplitter)
+        self.splitter = QSplitter(Qt.Vertical)
+        self.splitter.setChildrenCollapsible(False)  # 禁止子组件折叠到0
+
+        # 设置自身的尺寸策略 - 铺满父容器
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        # 初始化 inputWidget（QTreeWidget）
+        self.inputWidget = QTreeWidget()
         self.inputWidget.setStyleSheet("QTreeWidget::item{height:" + str(Utils.getItemHeight()) + "px}")
 
         self.inputWidget.setHeaderLabels(['Key', 'Value'])
@@ -74,30 +135,95 @@ class UpdateProperty(QTreeWidget):
         self.inputAttr.setExpanded(True)
         self.inputWidget.expanded.connect(self.changeExpand)
         self.inputWidget.collapsed.connect(self.changeExpand)
-        self.initClassBox()
+        # 将 inputWidget 添加到分隔器（上部分）
+        self.splitter.addWidget(self.inputWidget)
 
-        self.listView = QListView(self)
+        # ========= 创建底部的 ClassBox 容器 Start============
+        self.classBoxContainer = QWidget()
+        buttomExtBoxLayout = QVBoxLayout(self.classBoxContainer)
+        buttomExtBoxLayout.setContentsMargins(10, 5, 10, 5)
+        buttomExtBoxLayout.setSpacing(5)
+        # 设置布局对齐方式为顶部对齐
+        buttomExtBoxLayout.setAlignment(Qt.AlignTop)
+
+        # ComboBox 行 - 创建一个容器包裹以便统一管理
+        comboBoxContainer = QWidget()
+        # 设置 comboBoxContainer 的尺寸策略：水平方向可扩展，垂直方向固定
+        comboBoxContainer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        comboBoxRow = QHBoxLayout(comboBoxContainer)
+        comboBoxRow.setContentsMargins(0, 0, 0, 0)
+        comboBoxRow.setSpacing(10)
+
+        self.classActionBox = QComboBox()
+        self.classActionBox.setEditable(False)
+        self.classActionBox.setMaxVisibleItems(2)
+        self.classActionBox.setInsertPolicy(QComboBox.InsertAtTop)
+        self.classActionBox.addItem("add-class")
+        self.classActionBox.addItem("remove-class")
+
+        self.classValuesBox = QComboBox()
+        self.classValuesBox.setEditable(False)
+        # 设置固定高度，不随 splitter 调整而变化
+        self.classValuesBox.setFixedHeight(30)
+        self.classValuesBox.activated.connect(self.updateClass)
+
+        comboBoxRow.addWidget(self.classActionBox, 1)
+        comboBoxRow.addWidget(self.classValuesBox, 3)
+        # comboBoxContainer 不拉伸，始终保持在顶部
+        buttomExtBoxLayout.addWidget(comboBoxContainer, 0)
+        # ========= 创建底部的 ClassBox 容器 End ============
+
+        # 事件列表
+        self.listView = QListView()
+        self.listView.setStyleSheet("background-color: #FEF9E7;")
         self.listView.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.slm = QStringListModel()
         self.slm.setStringList(ITEM_EVENT)
         self.listView.setModel(self.slm)
-        self.listView.move(30, 150)
-        self.listView.resize(300, int(len(ITEM_EVENT) * Utils.getItemHeight()))
         self.listView.clicked.connect(self.itemClickedEvent)
+        # listView 高度自适应内容，不拉伸
+        self.listView.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        buttomExtBoxLayout.addWidget(self.listView, 0)
+        # 添加弹性空间占用剩余区域，确保内容紧贴顶部
+        buttomExtBoxLayout.addStretch()
+
+        # 将 classBoxContainer 添加到分隔器（下部分）
+        self.splitter.addWidget(self.classBoxContainer)
+        # 设置分隔器的初始比例为 6:4
+        self.splitter.setStretchFactor(0, 6)
+        self.splitter.setStretchFactor(1, 4)
+
+        # 将分隔器添加到主布局
+        self.mainLayout.addWidget(self.splitter)
+        # 初始化类数据
+        ITEM_CLASS.clear()
+        self.initAllClassData()
+
         STCLogger().i('init UpdateProperty')
+
+        # 初始化时检查是否需要滚动
+        self._checkScrollNeeded()
 
     def inputString(self):
         STCLogger().i('input key = ')
 
     def changeExpand(self):
-        classHeight = int(3.25 * Utils.getItemHeight())
-        if self.inputAttr.isExpanded() and self.inputAttr.child(0):
-            classHeight = classHeight + int((ITEM_ATTR.__len__() + 1) * Utils.getItemHeight())
-        if self.inputStyle.isExpanded() and self.inputAttr.child(0):
-            classHeight = classHeight + int((ITEM_STYLE.__len__() + 1) * Utils.getItemHeight())
-        self.ClassBox_1.move(30, classHeight)
-        self.ClassBox_2.move(150, classHeight)
-        self.listView.move(30, classHeight + Utils.getItemHeight())
+        # 布局管理器会自动处理，无需手动调整位置
+        # 保留此方法以兼容现有信号连接
+        pass
+
+    def _checkScrollNeeded(self):
+        """更新 listView 的大小（QTreeWidget 由布局管理器自动处理）"""
+        # 更新 listView 的高度，让它自适应内容
+        eventCount = len(ITEM_EVENT)
+        if eventCount > 0:
+            # 只设置最小高度，让高度自适应内容
+            self.listView.setMinimumHeight(eventCount * 30)
+            # 移除最大高度限制，让 listView 完全自适应内容高度
+            self.listView.setMaximumHeight(16777215)  # QWIDGETSIZE_MAX
+        else:
+            self.listView.setMinimumHeight(0)
+            self.listView.setMaximumHeight(0)
 
     def updateAttrUrl(self):
         num = 0
@@ -157,6 +283,8 @@ class UpdateProperty(QTreeWidget):
             return
         STCLogger().i('updateAddProperty:' + item.text(0) + ',' + item.text(1))
         self.addQTreeWidgetItem(root)
+        # 添加项目后检查是否需要滚动
+        self._checkScrollNeeded()
 
     def updateItemUI(self):
         if self.sameFlag:
@@ -175,9 +303,12 @@ class UpdateProperty(QTreeWidget):
         self.inputWidget.itemChanged.connect(self.updateStyleUrl)
         self.changeExpand()
 
+        # 更新UI后检查是否需要滚动
+        self._checkScrollNeeded()
+
+        # 更新事件列表（高度由 _checkScrollNeeded 自动调整）
         self.slm.setStringList(ITEM_EVENT)
         self.listView.setModel(self.slm)
-        self.listView.resize(300, len(ITEM_EVENT) * 30)
 
     def itemClickedEvent(self, qModelIndex):
         print("click " + ITEM_EVENT[qModelIndex.row()])
@@ -236,24 +367,6 @@ class UpdateProperty(QTreeWidget):
                         ITEM_EVENT.append(item.attrib['action'])
         self.initPageClassData(pageId)
 
-    def initClassBox(self):
-        self.ClassBox_1 = QComboBox(self)
-        self.ClassBox_1.setEditable(False)
-        self.ClassBox_1.setMaxVisibleItems(2)
-        self.ClassBox_1.setInsertPolicy(QComboBox.InsertAtTop)
-        self.ClassBox_1.addItem("add-class")
-        self.ClassBox_1.addItem("remove-class")
-        self.ClassBox_1.move(30, int(3.25 * Utils.getItemHeight()))
-        self.ClassBox_1.resize(150, 30)
-
-        self.ClassBox_2 = QComboBox(self)
-        self.ClassBox_2.setEditable(False)
-        self.ClassBox_2.move(150, int(3.25 * Utils.getItemHeight()))
-        self.ClassBox_2.resize(200, 30)
-        self.ClassBox_2.activated.connect(self.updateClass)
-        ITEM_CLASS.clear()
-        self.initAllClassData()
-
     def initAllClassData(self):
         all = XulDebugServerHelper.getAllSelector()
         if all.data:
@@ -285,7 +398,7 @@ class UpdateProperty(QTreeWidget):
                         print("select exception!")
 
         for name in ITEM_CLASS:
-            self.ClassBox_2.addItem(name)
+            self.classValuesBox.addItem(name)
 
     def updateClass(self):
-        XulDebugServerHelper.updateClassUrl(self.ClassBox_1.currentText(), self.viewId, self.ClassBox_2.currentText())
+        XulDebugServerHelper.updateClassUrl(self.classActionBox.currentText(), self.viewId, self.classValuesBox.currentText())
