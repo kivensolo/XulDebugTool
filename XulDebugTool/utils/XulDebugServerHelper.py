@@ -7,6 +7,14 @@ import urllib3
 from XulDebugTool.logcatapi.Logcat import STCLogger
 
 
+# 全局 HTTP 连接池，带超时和重试配置
+# 超时设置：连接超时3秒，读取超时3秒
+# 重试设置：总共重试2次，连接失败重试1次
+_http_pool = urllib3.PoolManager(
+    timeout=urllib3.Timeout(connect=3.0, read=3.0),
+    retries=urllib3.Retry(total=2, connect=1)
+)
+
 class XulDebugServerHelper(object):
     HOST = ''
     __LIST_PAGE = 'list-pages'
@@ -29,8 +37,7 @@ class XulDebugServerHelper(object):
         else:
             try:
                 url = XulDebugServerHelper.HOST + XulDebugServerHelper.__LIST_PAGE
-                http = urllib3.PoolManager()
-                r = http.request('GET', url)
+                r = _http_pool.request('GET', url)
             except Exception as e:
                 STCLogger().e(e)
                 return
@@ -43,8 +50,7 @@ class XulDebugServerHelper(object):
         else:
             try:
                 url = XulDebugServerHelper.HOST + quote(XulDebugServerHelper.__GET_LAYOUT + '/' + pageId)
-                http = urllib3.PoolManager()
-                r = http.request('GET', url, fields={'skip-prop': skipProp,
+                r = _http_pool.request('GET', url, fields={'skip-prop': skipProp,
                                          'with-binding-data': withBindingData,
                                          'with-position': withPosition,
                                          'with-selector': withSelector})
@@ -68,8 +74,7 @@ class XulDebugServerHelper(object):
         else:
             try:
                 url = XulDebugServerHelper.HOST + XulDebugServerHelper.__LIST_USER_OBJECTS
-                http = urllib3.PoolManager()
-                r = http.request('GET', url)
+                r = _http_pool.request('GET', url)
             except Exception as e:
                 STCLogger().e(e)
                 return
@@ -82,8 +87,7 @@ class XulDebugServerHelper(object):
         else:
             try:
                 url = XulDebugServerHelper.HOST + quote(XulDebugServerHelper.__GET_USER_OBJECT + '/' + objectId)
-                http = urllib3.PoolManager()
-                r = http.request('GET', url)
+                r = _http_pool.request('GET', url)
             except Exception as e:
                 STCLogger().e(e)
                 return
@@ -96,9 +100,8 @@ class XulDebugServerHelper(object):
         else:
             try:
                 url = XulDebugServerHelper.HOST + quote(type + '/' + id + '/' + key + '/' + value)
-                http = urllib3.PoolManager()
                 STCLogger().i("updateUrl = " + url)
-                r = http.request('GET', url)
+                r = _http_pool.request('GET', url)
             except Exception as e:
                 STCLogger().e(e)
                 return
@@ -111,9 +114,8 @@ class XulDebugServerHelper(object):
         else:
             try:
                 url = XulDebugServerHelper.HOST + XulDebugServerHelper.__CLEAR_ALL_CACHES
-                http = urllib3.PoolManager()
                 STCLogger().i("clearAllCaches = " + url)
-                r = http.request('GET', url)
+                r = _http_pool.request('GET', url)
             except Exception as e:
                 STCLogger().e(e)
                 return
@@ -126,9 +128,8 @@ class XulDebugServerHelper(object):
         else:
             try:
                 url = XulDebugServerHelper.HOST + XulDebugServerHelper.__REQUEST_FOCUS + '/' + id
-                http = urllib3.PoolManager()
                 STCLogger().i("focusChooseItemUrl = " + url)
-                r = http.request('GET', url)
+                r = _http_pool.request('GET', url)
             except Exception as e:
                 STCLogger().e(e)
                 return
@@ -141,9 +142,8 @@ class XulDebugServerHelper(object):
         else:
             try:
                 url = XulDebugServerHelper.HOST + XulDebugServerHelper.__GET_SELECTOR
-                http = urllib3.PoolManager()
                 STCLogger().i("getAllSelector = " + url)
-                r = http.request('GET', url)
+                r = _http_pool.request('GET', url)
             except Exception as e:
                 STCLogger().e(e)
                 return
@@ -160,9 +160,8 @@ class XulDebugServerHelper(object):
         else:
             try:
                 url = XulDebugServerHelper.HOST + quote(type + '/' + id + '/' + className)
-                http = urllib3.PoolManager()
                 STCLogger().i("updateClassUrl = " + url)
-                r = http.request('GET', url)
+                r = _http_pool.request('GET', url)
             except Exception as e:
                 STCLogger().e(e)
                 return
@@ -175,9 +174,8 @@ class XulDebugServerHelper(object):
         else:
             try:
                 url = XulDebugServerHelper.HOST + quote(XulDebugServerHelper.__FIRE_EVENT + '/' + id + '/' + action)
-                http = urllib3.PoolManager()
                 STCLogger().i("fireItemEvent = " + url)
-                r = http.request('GET', url)
+                r = _http_pool.request('GET', url)
             except Exception as e:
                 STCLogger().e(e)
                 return r
