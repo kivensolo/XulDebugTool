@@ -46,7 +46,82 @@
 
 
 
-## 二、使用方法
+## 二、环境配置
+
+### 1、虚拟环境配置
+
+创建虚拟环境（推荐）：
+```bash
+python -m venv venv
+```
+
+激活虚拟环境：
+```bash
+# Windows
+venv\Scripts\activate
+
+# Linux/Mac
+source venv/bin/activate
+```
+
+### 2、依赖安装
+
+安装项目依赖：
+```bash
+pip install -r requirements.txt
+```
+
+或单独安装核心依赖：
+```bash
+pip install PyQt5 PyQtWebEngine
+```
+
+**注意**：如果PyQt5版本 >= 5.11，需要额外安装PyQtWebEngine：
+```bash
+pip install PyQtWebEngine
+```
+
+### 3、打包应用
+
+项目根目录已包含 `XulDebugTool.spec` 配置文件，直接使用即可：
+
+**使用项目 spec 文件打包：**
+```bash
+pyinstaller XulDebugTool.spec
+```
+
+**spec 文件配置说明：**
+
+项目 spec 文件 (`XulDebugTool.spec`) 已配置以下内容：
+- 入口文件：`XulDebugTool/App.py`
+- 资源文件：`config` 和 `resources` 目录
+- 隐式导入：PyQt5 全家桶、lxml、xmltodict、urllib3、pyperclip 等
+- 调试模式：`console=True`（显示控制台，便于调试）
+
+**如需修改配置：**
+
+```bash
+# 编辑 XulDebugTool.spec 文件
+# 常见修改项：
+# - console: True/False  是否显示控制台窗口
+# - icon: 'resources/images/icon.ico'  设置应用图标
+# - datas: []  添加更多资源文件
+# - hiddenimports: []  添加隐式导入的模块
+```
+
+**打包后的目录结构：**
+```
+dist/
+└── XulDebugTool.exe    # 可执行文件
+```
+
+**打包注意事项**：
+- 确保已安装 pyinstaller：`pip install pyinstaller`
+- 打包前确保虚拟环境已激活且依赖完整
+- 当前配置为单文件打包（--onefile），所有依赖打包进一个 exe
+- 如运行时提示缺少模块，在 `hiddenimports` 中添加
+
+## 三、使用方法
 ### 1、连接页面功能
 #### （1）下拉框可输入ip：adbport:xulport（例如：172.31.11.56:55550:55550）,如示例，ip为所连接设备的ip地址，adbport为adb的端口号，xulport为所调试的apk的xul调试端口，两种端口号都可省略，省略adb端口号格式（ip：:xulport）
 
