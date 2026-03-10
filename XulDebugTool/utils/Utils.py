@@ -74,6 +74,10 @@ class Utils(object):
         return Utils.itemHeight * Utils.zoomFactor
 
     @staticmethod
+    def getAdaptSize(number):
+        return number * Utils.zoomFactor
+
+    @staticmethod
     def calculateZoomFactor():
         """
         根据屏幕分辨率计算合适的缩放因子
