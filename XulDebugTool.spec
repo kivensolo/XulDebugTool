@@ -18,25 +18,7 @@ a = Analysis(
         # 资源文件（图片等）
         ('resources', 'resources'),
     ],
-    hiddenimports=[
-        'PyQt5.QtCore',
-        'PyQt5.QtGui',
-        'PyQt5.QtWidgets',
-        'PyQt5.QtWebChannel',
-        'PyQt5.QtWebEngineWidgets',
-        'PyQt5.QtWebEngineCore',
-        # QtWebEngine 相关依赖
-        'PyQt5.QtWebEnginePlugins.QtWebEngine',
-        'PyQt5.QtWebEnginePlugins.QtPrint',
-        # 其他依赖
-        'lxml',
-        'lxml._elementpath',
-        'lxml.etree',
-        'xmltodict',
-        'urllib3',
-        'pyperclip',
-        'json',
-    ],
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -60,7 +42,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,  # 禁用 UPX 压缩，可能导致问题
+    upx=True,  # 启用 UPX 压缩
     upx_exclude=[],
     runtime_tmpdir=None,
     console=True,  # 显示控制台窗口，便于调试
