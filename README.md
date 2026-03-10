@@ -170,8 +170,23 @@ dist/
 ✅ Attr和Style设置区域可支持垂直滚动。<br>
 ✅ ComboBox 紧贴顶部，固定高度;<br>
 ✅ ListView 高度自适应内容;<br>
+✅ 快捷Attr/Style的添加面板;<br>
+
+* 快捷属性的配置加载优先级说明<br>
+  1. exe 同目录 - XulDebugTool.exe同级/config/quick_templates.json（用户自定义）
+  2. exe 内部 - _MEIPASS/config/quick_templates.json（打包后的默认配置）
+  3. 项目根目录 - 项目根目录/config/quick_templates.json（开发环境）
+  4. 当前工作目录 - 当前目录/config/quick_templates.json
+  5. 默认配置 - 代码中的 DEFAULT_TEMPLATES（作为 fallback）
+
+  开发环境：
+  直接修改 `config/quick_templates.json` 文件
+
+  打包后：
+  在 exe 同目录下创建 `config/quick_templates.json` 文件即可覆盖默认配置
 
 * 右侧的Favorities展示的是操作过的provider的历史记录和收藏，provider的数据请求方式：选中左侧列表元素，单击鼠标右键，对provider的数据进行请求（qury-data），此时会弹出一个data-qury的对话框，在where列填入请求参数key，在is列填入对应值，点击request金字那个查找，结果显示在中部内容区域，查找过的provider会被保存到右侧Faviorities的History中。
+
 
 * provider收藏功能：选中右侧Favorities->History,选中想要收藏的provider，单击鼠标右键，选择收藏，此时，收藏过的provider会出现在History上面的Favorites列表中
 

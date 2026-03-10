@@ -1,0 +1,66 @@
+{
+  "version": "1.0.0",
+  "description": "快捷属性的内置模板配置文件",
+  "notes": "打包后，在exe执行文件同目录下创建 config/quick_templates.json 文件即可覆盖此默认配置",
+  "templates": {
+    "attr": {
+      "padding(TLRB)": {
+        "key": "padding",
+        "value": "5,5,5,5",
+        "description": "默认padding"
+      },
+      "宽度100": {
+        "key": "width",
+        "value": "100",
+        "description": "设置宽度为100"
+      },
+      "高度100": {
+        "key": "height",
+        "value": "100",
+        "description": "设置高度为100"
+      },
+      "居中对齐": {
+        "key": "align",
+        "value": "center",
+        "description": "设置居中对齐"
+      },
+      "文本内容": {
+        "key": "text",
+        "value": "sample text",
+        "description": "设置示例文本"
+      }
+    },
+    "style": {
+      "调试border": {
+        "key": "border",
+        "value": "1,ff00ff99,0,0",
+        "description": "添加调试边框"
+      },
+      "红色背景": {
+        "key": "background-color",
+        "value": "ffff0000",
+        "description": "设置红色背景"
+      },
+      "白色字体": {
+        "key": "font-color",
+        "value": "ffffffff",
+        "description": "设置白色字体"
+      },
+      "字体大小20": {
+        "key": "font-size",
+        "value": "20",
+        "description": "设置字体大小为20"
+      },
+      "字体加粗": {
+        "key": "font-weight",
+        "value": "bold",
+        "description": "设置字体加粗"
+      },
+      "隐藏": {
+        "key": "display",
+        "value": "none",
+        "description": "隐藏控件"
+      }
+    }
+  }
+}

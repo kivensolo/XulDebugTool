@@ -62,6 +62,7 @@ from XulDebugTool.logcatapi.Logcat import STCLogger
 from XulDebugTool.utils.IconTool import IconTool
 from XulDebugTool.utils.Utils import Utils
 from XulDebugTool.utils.XulDebugServerHelper import XulDebugServerHelper
+from XulDebugTool.utils.QuickTemplatesLoader import QuickTemplatesLoader
 
 # 数据的整理，需要把数据填充至内显示
 ITEM_ATTR = {}
@@ -121,6 +122,9 @@ class UpdateProperty(QWidget):
         self.inputWidget.setStyleSheet("QTreeWidget::item{height:" + str(Utils.getItemHeight()) + "px}")
 
         self.inputWidget.setHeaderLabels(['Key', 'Value'])
+        # 设置上下文菜单策略
+        self.inputWidget.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.inputWidget.customContextMenuRequested.connect(self.openContextMenu)
 
         self.inputAttr = QTreeWidgetItem()
         self.inputAttr.setText(0, 'Attr')
@@ -402,3 +406,146 @@ class UpdateProperty(QWidget):
 
     def updateClass(self):
         XulDebugServerHelper.updateClassUrl(self.classActionBox.currentText(), self.viewId, self.classValuesBox.currentText())
+
+    def openContextMenu(self, point):
+        """
+        打开上下文菜单，根据点击位置显示不同的快捷选项
+        """
+        item = self.inputWidget.itemAt(point)
+        if item is None:
+            return
+
+        # 判断点击的是哪个根节点区域
+        root_item = item
+        while root_item.parent() is not None:
+            root_item = root_item.parent()
+
+        # 检查是否是 Attr 或 Style 根节点或其子节点
+        if root_item == self.inputAttr:
+            templates = QuickTemplatesLoader.get_attr_templates()
+            self._showQuickAddMenu(point, templates, 'set-attr', ITEM_ATTR, self.inputAttr)
+        elif root_item == self.inputStyle:
+            templates = QuickTemplatesLoader.get_style_templates()
+            self._showQuickAddMenu(point, templates, 'set-style', ITEM_STYLE, self.inputStyle)
+
+    def _showQuickAddMenu(self, point, templates, update_type, item_dict, root_item):
+        """
+        显示快速添加菜单
+
+        :param point: 鼠标点击位置
+        :param templates: 属性模板字典 {显示名: (key, value)}
+        :param update_type: 更新类型 ('set-attr' 或 'set-style')
+        :param item_dict: 当前属性字典 (ITEM_ATTR 或 ITEM_STYLE)
+        :param root_item: 根节点 (inputAttr 或 inputStyle)
+        """
+        menu = QMenu(self)
+
+        # 添加菜单标题
+        title_action = menu.addAction("【快捷添加】")
+        title_action.setEnabled(False)
+
+        # 添加分隔线
+        menu.addSeparator()
+
+        # 添加模板选项
+        for display_name, (key, value) in templates.items():
+            action = menu.addAction(display_name)
+            action.setData((key, value))
+
+        # 添加分隔线
+        menu.addSeparator()
+
+        # 添加自定义选项
+        custom_action = menu.addAction("自定义添加...")
+        custom_action.setData(('custom', ''))
+
+        # 显示菜单并获取用户选择
+        action = menu.exec_(self.inputWidget.mapToGlobal(point))
+
+        if action is not None:
+            data = action.data()
+            if data and data[0] == 'custom':
+                # 自定义添加：定位到添加行
+                self._focusOnAddRow(root_item)
+            else:
+                # 快速添加预设属性
+                key, value = data
+                self._addProperty(update_type, key, value, item_dict, root_item)
+
+    def _focusOnAddRow(self, root_item):
+        """
+        定位到添加行并开始编辑
+        """
+        child_count = root_item.childCount()
+        if child_count > 0:
+            add_item = root_item.child(child_count - 1)
+            self.inputWidget.setCurrentItem(add_item, 0)
+            self.inputWidget.editItem(add_item, 0)
+
+    def _addProperty(self, update_type, key, value, item_dict, root_item):
+        """
+        添加属性到列表并更新到服务器
+
+        :param update_type: 更新类型 ('set-attr' 或 'set-style')
+        :param key: 属性键
+        :param value: 属性值
+        :param item_dict: 当前属性字典 (ITEM_ATTR 或 ITEM_STYLE)
+        :param root_item: 根节点 (inputAttr 或 inputStyle)
+        """
+        # 检查属性是否已存在
+        if key in item_dict:
+            reply = QMessageBox.question(
+                self,
+                "属性已存在",
+                f"属性 '{key}' 已存在，是否覆盖现有值？\n当前值: {item_dict[key]}\n新值: {value}",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
+
+        # 更新本地数据
+        item_dict[key] = value
+
+        # 发送到服务器
+        result = XulDebugServerHelper.updateUrl(update_type, self.viewId, key, value)
+        if result is None or result.status != 200:
+            QMessageBox.warning(self, "警告", f"添加属性 '{key}' 失败")
+            return
+
+        STCLogger().i(f'快速添加属性: {key}={value}')
+
+        # 刷新UI显示
+        self._refreshPropertyUI(root_item, item_dict)
+
+    def _refreshPropertyUI(self, root_item, item_dict):
+        """
+        刷新属性列表UI显示
+
+        :param root_item: 根节点 (inputAttr 或 inputStyle)
+        :param item_dict: 当前属性字典 (ITEM_ATTR 或 ITEM_STYLE)
+        """
+        # 临时断开信号连接，避免刷新时触发更新
+        try:
+            self.inputWidget.itemChanged.disconnect()
+        except TypeError:
+            pass
+
+        # 清空子项
+        root_item.takeChildren()
+
+        # 重新填充数据
+        for pos, (key, value) in enumerate(item_dict.items()):
+            item = self.getQTreeWidgetItem(pos, key, value)
+            root_item.addChild(item)
+
+        # 添加空行用于新增
+        self.addQTreeWidgetItem(root_item)
+
+        # 重新连接信号
+        if root_item == self.inputAttr:
+            self.inputWidget.itemChanged.connect(self.updateAttrUrl)
+        else:
+            self.inputWidget.itemChanged.connect(self.updateStyleUrl)
+
+        self.changeExpand()
