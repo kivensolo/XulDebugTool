@@ -25,8 +25,8 @@ from XulDebugTool.ui.BaseWindow import BaseWindow
 from XulDebugTool.ui.widget.ButtomConsoleWindow import ButtomWindow
 from XulDebugTool.ui.widget.DataQueryDialog import DataQueryDialog
 from XulDebugTool.ui.widget.FavoriteTreeView import FavoriteTreeView
-from XulDebugTool.ui.widget.PropertyEditor import PropertyEditor
 from XulDebugTool.ui.widget.UpdateProperty import UpdateProperty
+from XulDebugTool.ui.widget.LayoutLevelNavigatorWidget import LayoutLevelNavigatorWidget
 from XulDebugTool.ui.widget.model.database.ConfigurationDB import ConfigurationDB
 from XulDebugTool.utils.ConfigHelper import ConfigHelper
 from XulDebugTool.utils.IconTool import IconTool
@@ -65,6 +65,8 @@ class MainWindow(BaseWindow):
         super().__init__()
         print('__init__ main window.')
         self.qObject = QObject()
+        # 导航选中的高亮效果清除定时器
+        self._highlightClearTimer = None
         try:
             print('Step 1: Init console')
             self.initConsole()
@@ -212,17 +214,13 @@ class MainWindow(BaseWindow):
         # self.tabBar.addTab('tab1')
         # self.tabBar.addTab('tab2')
 
-        self.pathBar = QWidget()
-        layout = QHBoxLayout()
-        layout.setAlignment(Qt.AlignLeft)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(1)
-        self.pathBar.setLayout(layout)
+        # 使用布局层级导航组件替代原有的 pathBar
+        self.breadcrumbWidget = LayoutLevelNavigatorWidget()
+        self.breadcrumbWidget.nodeClicked.connect(self.onBreadcrumbNodeClicked)
 
         self.searchHolder = QWidget()
         layout = QHBoxLayout()
         layout.addWidget(self.tabBar)
-        layout.addWidget(self.pathBar)
         layout.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Expanding))
         self.searchHolder.setLayout(layout)
         self.searchHolder.layout().setContentsMargins(6, 6, 6, 0)
@@ -230,6 +228,10 @@ class MainWindow(BaseWindow):
         self.tabContentWidget = QWidget()
         self.browser = QWebEngineView()
         self.browser.setZoomFactor(Utils.calculateZoomFactor())
+        # 启用开发者工具用于调试
+        from PyQt5.QtWebEngineWidgets import QWebEngineSettings
+        self.browser.settings().setAttribute(QWebEngineSettings.JavascriptEnabled, True)
+        self.browser.settings().setAttribute(QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
         self.channel = QWebChannel()
         self.webObject = WebShareObject()
         self.channel.registerObject('bridge', self.webObject)
@@ -257,9 +259,11 @@ class MainWindow(BaseWindow):
 
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)  # 设置控件间距为0，保证浏览器view和底部导航组件没有间隙
         layout.addWidget(self.initQCheckBoxUI())
         layout.addWidget(self.initSearchView())
         layout.addWidget(self.browser, 1)          # 浏览器区域，stretch=1 占据剩余空间
+        layout.addWidget(self.breadcrumbWidget)    # 布局层级导航放在浏览器下方
         self.tabContentWidget.setLayout(layout)
         self.searchWidget.hide()
 
@@ -329,6 +333,9 @@ class MainWindow(BaseWindow):
         if dict['action'] == "click":
             self.chooseItemId = dict['Id']
             self.chooseItemType = Utils.findNodeById(dict['Id'], dict['xml']).tag
+            # 更新布局层级导航
+            self._updateBreadcrumb(dict['Id'], dict['xml'])
+
         elif dict['action'] == "load":
             self.browser.load(QUrl(dict['url']))
         else:
@@ -337,6 +344,60 @@ class MainWindow(BaseWindow):
     def focusChooseItem(self):
         if self.chooseItemType in ('area', 'item'):
             XulDebugServerHelper.focusChooseItemUrl(self.chooseItemId)
+
+    def _updateBreadcrumb(self, nodeId, xml):
+        """
+        更新布局层级导航
+        :param nodeId: 节点ID
+        :param xml: XML字符串
+        """
+        try:
+            pathInfo = Utils.findNodePathById(nodeId, xml)
+            self.breadcrumbWidget.updatePath(pathInfo['pathItems'])
+            STCLogger().i(f'Breadcrumb updated: {len(pathInfo["pathItems"])} levels')
+        except Exception as e:
+            STCLogger().e(f'Failed to update breadcrumb: {e}')
+
+    def onBreadcrumbNodeClicked(self, nodeId):
+        """
+        布局层级导航节点点击处理 - 滚动到目标节点
+        【注意】：用element的scrollViewToXxxx方法无效，测遍了都无效，只有用这种方案曲线救国。
+
+        :param nodeId: 点击的节点ID (节点id的属性值)
+        """
+        STCLogger().i(f'Breadcrumb clicked, nodeId: "{nodeId}"')
+        try:
+            # 取消之前的高亮清除定时器
+            if self._highlightClearTimer is not None:
+                self._highlightClearTimer.stop()
+                self._highlightClearTimer = None
+
+            # 清空之前的搜索
+            self.browser.findText("")
+            # 使用 findText 搜索（这是唯一可靠的方法）
+            search_text = f'id="{nodeId}"'
+
+            def clear_highlight():
+                """清除搜索高亮"""
+                self.browser.findText("")
+                STCLogger().i(f'Highlight cleared for: {nodeId}')
+                self._highlightClearTimer = None
+
+            def handle_backward_search(found):
+                """向后搜索（从下往上）结果处理"""
+                if found:
+                    STCLogger().i(f'Found (backward): {nodeId}')
+                    # 启动5秒定时器清除高亮
+                    self._highlightClearTimer = QTimer()
+                    self._highlightClearTimer.timeout.connect(clear_highlight)
+                    self._highlightClearTimer.setSingleShot(True)
+                    self._highlightClearTimer.start(1500)  # 1.5秒后清除
+            # 向后搜索（FindFlags(1)），这样更容易找到上层元素
+            self.browser.findText(search_text, QWebEnginePage.FindFlags(1), handle_backward_search)
+        except Exception as e:
+            STCLogger().e(f'Failed to find text: {e}')
+
+
 
     def initQCheckBoxUI(self):
         self.groupBox = QGroupBox()
@@ -542,6 +603,7 @@ class MainWindow(BaseWindow):
         elif item.type == ITEM_TYPE_PROVIDER:  # 树第三层,userObject下的DataService下的子节点
             pass
 
+        self.breadcrumbWidget.clearPath()
         self.groupBox.setHidden(item.type != ITEM_TYPE_PAGE)
         # self.fillPropertyEditor(item.data)
 

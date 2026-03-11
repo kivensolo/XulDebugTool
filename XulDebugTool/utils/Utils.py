@@ -138,3 +138,73 @@ class Utils(object):
             cursor.close()
             conn.close()
         return result
+
+    @staticmethod
+    def getNodePath(nodeId, xml):
+        """
+        获取节点的完整路径信息
+
+        :param nodeId: 节点ID
+        :param xml: XML字符串
+        :return: 路径节点列表 [(display_name, node_id, node_type), ...]
+        """
+        from lxml import etree
+
+        try:
+            root = etree.fromstring(xml)
+            target_node = root.xpath("//*[@id=%s]" % nodeId)
+            if not target_node:
+                return []
+            target_node = target_node[0]
+
+            pathItems = []
+            current = target_node
+
+            # 向上遍历到根节点
+            while current is not None:
+                node_id = current.get('id', '')
+                node_tag = current.tag
+
+                # 获取显示名称：优先级 xulId > type > 节点名称（小写）
+                if current.get('xulId'):
+                    display_name = current.get('xulId')
+                elif current.get('type'):
+                    display_name = current.get('type')
+                else:
+                    # 节点名称小写显示
+                    display_name = node_tag.lower()
+
+                pathItems.insert(0, (display_name, node_id, node_tag))
+                current = current.getparent()
+
+                # 到达文档根元素时停止
+                if current is None or current.tag == root.tag:
+                    break
+
+            return pathItems
+
+        except Exception as e:
+            STCLogger().e(f'getNodePath error: {e}')
+            return []
+
+    @staticmethod
+    def findNodePathById(nodeId, xml, maxDepth=10):
+        """
+        通过ID查找节点并返回路径信息
+
+        :param nodeId: 节点ID
+        :param xml: XML字符串
+        :param maxDepth: 最大路径深度
+        :return: 包含路径信息的字典
+        """
+        pathItems = Utils.getNodePath(nodeId, xml)
+
+        # 限制路径深度
+        if len(pathItems) > maxDepth:
+            pathItems = [pathItems[0]] + [("...", "", "")] + pathItems[-(maxDepth - 2):]
+
+        return {
+            'nodeId': nodeId,
+            'pathItems': pathItems,
+            'depth': len(pathItems)
+        }
