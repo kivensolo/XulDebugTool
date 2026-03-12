@@ -23,7 +23,7 @@ class LayoutLevelNavigatorWidget(QWidget):
 
     def __init__(self, parent=None):
         super(LayoutLevelNavigatorWidget, self).__init__(parent)
-        self.pathItems = []  # [(display_name, node_id, node_type), ...]
+        self.pathItems = []  # [(node_name, display_name, node_id, node_type), ...]
         self._container = None
         self.initUI()
 
@@ -58,7 +58,11 @@ class LayoutLevelNavigatorWidget(QWidget):
         """
         更新布局层级导航路径
 
-        :param pathItems: 路径节点列表 [(display_name, node_id, node_type), ...]
+        :param pathItems: 路径节点列表 [(node_name, display_name, node_id, node_type), ...]
+                         - node_name: 按钮显示的节点名称
+                         - display_name: 悬浮提示名称（优先级 xulId > type > 节点名称）
+                         - node_id: 节点ID
+                         - node_type: 节点类型
         """
         self.pathItems = pathItems
         self._refreshUI()
@@ -81,16 +85,7 @@ class LayoutLevelNavigatorWidget(QWidget):
             return
 
         # 重建布局层级导航
-        for i, (display_name, node_id, node_type) in enumerate(self.pathItems):
-            # 限制文本长度为10个字符，超过则用省略号代替
-            max_length = 10
-            if len(display_name) > max_length:
-                short_name = display_name[:max_length] + "..."
-                full_name = display_name
-            else:
-                short_name = display_name
-                full_name = display_name
-
+        for i, (node_name, display_name, node_id, node_type) in enumerate(self.pathItems):
             # 添加分隔符（除第一个）
             if i > 0:
                 separator = QLabel(">")
@@ -99,7 +94,7 @@ class LayoutLevelNavigatorWidget(QWidget):
 
             # 最后一个节点：当前节点，不可点击
             if i == len(self.pathItems) - 1:
-                label = QLabel(full_name)
+                label = QLabel(display_name)
                 font = QFont()
                 font.setPointSize(12)
                 font.setBold(True)
@@ -107,8 +102,8 @@ class LayoutLevelNavigatorWidget(QWidget):
                 label.setStyleSheet("padding: 0px; font-weight: bold; color: #000; background: transparent;")
                 layout.addWidget(label)
             else:
-                # 中间节点：可点击
-                button = QPushButton(short_name)
+                # 中间节点：可点击，显示节点名称，悬浮显示display_name
+                button = QPushButton(node_name)
                 # 使用 QFont 对象设置字体，确保 DPI 缩放行为一致
                 font = QFont()
                 font.setPointSize(12)
@@ -120,7 +115,7 @@ class LayoutLevelNavigatorWidget(QWidget):
                         background: transparent;
                         border: none;
                         color: #0066cc;
-                        padding: 0px;
+                        padding: 0px 3px;
                         text-align: left;
                     }
                     QPushButton:hover {
@@ -129,8 +124,7 @@ class LayoutLevelNavigatorWidget(QWidget):
                     }
                 """)
                 button.setCursor(QCursor(Qt.PointingHandCursor))
-                # 如果文本被截断，添加 tooltip 显示完整文本
-                if len(display_name) > max_length:
-                    button.setToolTip(full_name)
+                # 设置 tooltip 显示display_name（优先级 xulId > type > 节点名称）
+                button.setToolTip(display_name)
                 button.clicked.connect(lambda checked, nid=node_id: self.nodeClicked.emit(nid))
                 layout.addWidget(button)

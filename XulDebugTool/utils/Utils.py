@@ -146,7 +146,11 @@ class Utils(object):
 
         :param nodeId: 节点ID
         :param xml: XML字符串
-        :return: 路径节点列表 [(display_name, node_id, node_type), ...]
+        :return: 路径节点列表 [(node_name, display_name, node_id, node_type), ...]
+                 - node_name: 节点名称（小写），用于按钮显示
+                 - display_name: 悬浮提示名称，优先级 xulId > type > 节点名称
+                 - node_id: 节点ID
+                 - node_type: 节点类型
         """
         from lxml import etree
 
@@ -164,17 +168,18 @@ class Utils(object):
             while current is not None:
                 node_id = current.get('id', '')
                 node_tag = current.tag
+                # 节点名称小写显示
+                node_name = node_tag.lower()
 
-                # 获取显示名称：优先级 xulId > type > 节点名称（小写）
+                # 获取悬浮提示名称：优先级 xulId > type > 节点名称（小写）
                 if current.get('xulId'):
                     display_name = current.get('xulId')
                 elif current.get('type'):
                     display_name = current.get('type')
                 else:
-                    # 节点名称小写显示
-                    display_name = node_tag.lower()
+                    display_name = node_name
 
-                pathItems.insert(0, (display_name, node_id, node_tag))
+                pathItems.insert(0, (node_name, display_name, node_id, node_tag))
                 current = current.getparent()
 
                 # 到达文档根元素时停止
@@ -201,7 +206,7 @@ class Utils(object):
 
         # 限制路径深度
         if len(pathItems) > maxDepth:
-            pathItems = [pathItems[0]] + [("...", "", "")] + pathItems[-(maxDepth - 2):]
+            pathItems = [pathItems[0]] + [("...", "...", "", "")] + pathItems[-(maxDepth - 2):]
 
         return {
             'nodeId': nodeId,
