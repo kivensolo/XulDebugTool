@@ -215,8 +215,8 @@ class MainWindow(BaseWindow):
         # self.tabBar.addTab('tab2')
 
         # 使用布局层级导航组件替代原有的 pathBar
-        self.breadcrumbWidget = LayoutLevelNavigatorWidget()
-        self.breadcrumbWidget.nodeClicked.connect(self.onBreadcrumbNodeClicked)
+        self.pathNavigatorWidget = LayoutLevelNavigatorWidget()
+        self.pathNavigatorWidget.nodeClicked.connect(self.onNavagatorPathNodeClicked)
 
         self.searchHolder = QWidget()
         layout = QHBoxLayout()
@@ -263,7 +263,7 @@ class MainWindow(BaseWindow):
         layout.addWidget(self.initQCheckBoxUI())
         layout.addWidget(self.initSearchView())
         layout.addWidget(self.browser, 1)          # 浏览器区域，stretch=1 占据剩余空间
-        layout.addWidget(self.breadcrumbWidget)    # 布局层级导航放在浏览器下方
+        layout.addWidget(self.pathNavigatorWidget)    # 布局层级导航放在浏览器下方
         self.tabContentWidget.setLayout(layout)
         self.searchWidget.hide()
 
@@ -334,7 +334,7 @@ class MainWindow(BaseWindow):
             self.chooseItemId = dict['Id']
             self.chooseItemType = Utils.findNodeById(dict['Id'], dict['xml']).tag
             # 更新布局层级导航
-            self._updateBreadcrumb(dict['Id'], dict['xml'])
+            self._updateNavagatorPath(dict['Id'], dict['xml'])
 
         elif dict['action'] == "load":
             self.browser.load(QUrl(dict['url']))
@@ -345,7 +345,7 @@ class MainWindow(BaseWindow):
         if self.chooseItemType in ('area', 'item'):
             XulDebugServerHelper.focusChooseItemUrl(self.chooseItemId)
 
-    def _updateBreadcrumb(self, nodeId, xml):
+    def _updateNavagatorPath(self, nodeId, xml):
         """
         更新布局层级导航
         :param nodeId: 节点ID
@@ -353,19 +353,19 @@ class MainWindow(BaseWindow):
         """
         try:
             pathInfo = Utils.findNodePathById(nodeId, xml)
-            self.breadcrumbWidget.updatePath(pathInfo['pathItems'])
-            STCLogger().i(f'Breadcrumb updated: {len(pathInfo["pathItems"])} levels')
+            self.pathNavigatorWidget.updatePath(pathInfo['pathItems'])
+            STCLogger().i(f'Navagator path updated: {len(pathInfo["pathItems"])} levels')
         except Exception as e:
-            STCLogger().e(f'Failed to update breadcrumb: {e}')
+            STCLogger().e(f'Failed to update navagator: {e}')
 
-    def onBreadcrumbNodeClicked(self, nodeId):
+    def onNavagatorPathNodeClicked(self, nodeId):
         """
         布局层级导航节点点击处理 - 滚动到目标节点
         【注意】：用element的scrollViewToXxxx方法无效，测遍了都无效，只有用这种方案曲线救国。
 
         :param nodeId: 点击的节点ID (节点id的属性值)
         """
-        STCLogger().i(f'Breadcrumb clicked, nodeId: "{nodeId}"')
+        STCLogger().i(f'Navagator path clicked, nodeId: "{nodeId}"')
         try:
             # 取消之前的高亮清除定时器
             if self._highlightClearTimer is not None:
@@ -603,7 +603,7 @@ class MainWindow(BaseWindow):
         elif item.type == ITEM_TYPE_PROVIDER:  # 树第三层,userObject下的DataService下的子节点
             pass
 
-        self.breadcrumbWidget.clearPath()
+        self.pathNavigatorWidget.clearPath()
         self.groupBox.setHidden(item.type != ITEM_TYPE_PAGE)
         # self.fillPropertyEditor(item.data)
 

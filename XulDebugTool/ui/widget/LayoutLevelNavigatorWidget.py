@@ -48,7 +48,7 @@ class LayoutLevelNavigatorWidget(QWidget):
 
         # 设置整体样式
         self.setStyleSheet("""
-            BreadcrumbWidget {
+            PathNavagatorWidget {
                 background-color: #f5f5f5;
                 border-bottom: 1px solid #ddd;
             }
