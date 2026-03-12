@@ -197,6 +197,7 @@ class Utils(object):
         """
         通过ID查找节点并返回路径信息
 
+        路径总长度为： 1(起始节点) + 1(省略号) + (maxDepth - 2)(末尾) = maxDepth
         :param nodeId: 节点ID
         :param xml: XML字符串
         :param maxDepth: 最大路径深度
@@ -204,9 +205,12 @@ class Utils(object):
         """
         pathItems = Utils.getNodePath(nodeId, xml)
 
-        # 限制路径深度
+        # 限制路径深度,若超长，则显示为：[item0, ("..."), item7, item8, ..., itemN]
         if len(pathItems) > maxDepth:
-            pathItems = [pathItems[0]] + [("...", "...", "", "")] + pathItems[-(maxDepth - 2):]
+            start = [pathItems[0]]               # [item0]
+            ellipsis = [("...", "...", "", "")]  # 占位符
+            end = pathItems[-(maxDepth-2):]      # 剩余的末尾节点
+            pathItems = start + ellipsis + end
 
         return {
             'nodeId': nodeId,
